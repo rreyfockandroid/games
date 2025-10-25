@@ -1,8 +1,10 @@
+BIN=../bin/
+
 build:
-	go build -o game .
+	cd game2; go build -o $(BIN)game2 .
 
 build-static:
-	CGO_ENABLED=0 go build -ldflags="-s -w" -o game .
+	cd game2; CGO_ENABLED=0 go build -ldflags="-s -w" -o $(BIN)game2-st .
 
 build-opengl:
-	go build -tags "ebitengine_opengl" -o game .
+	cd game2; go build -tags "ebitengine_opengl" -o $(BIN)game2-gl .
