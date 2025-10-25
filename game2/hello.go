@@ -3,10 +3,16 @@ package main
 import (
 	"image/color"
 	"log"
+	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
 
 	"github.com/hajimehoshi/ebiten/v2/vector"
+)
+
+var (
+	white  = color.White
+	yellow = color.RGBA{255, 255, 0, 255}
 )
 
 const (
@@ -29,14 +35,25 @@ type Game struct {
 	ballX, ballY float32
 	ballDr       bool
 	ballDb       bool
+
+	ballColor color.Color
+}
+
+func (g *Game) Reset() {
+	g.ballY = 100
+	g.ballX = 100
+	g.ballDr = true
+	time.Sleep(time.Second)
 }
 
 func (g *Game) Update() error {
 	if ebiten.IsKeyPressed(ebiten.KeyArrowUp) && g.paddleYb > 0 {
 		g.paddleYb -= paddleSpeed
+		// log.Println("paddleYb", g.paddleYb)
 	}
 	if ebiten.IsKeyPressed(ebiten.KeyArrowDown) && g.paddleYb < screenHeight-paddleHeight {
 		g.paddleYb += paddleSpeed
+		// log.Println("paddleYb", g.paddleYb)
 	}
 
 	if ebiten.IsKeyPressed(ebiten.KeyW) && g.paddleYa > 0 {
@@ -59,12 +76,24 @@ func (g *Game) Update() error {
 
 	if g.ballX >= screenWidth-ballRadius {
 		g.ballDr = false
+		if g.ballY >= g.paddleYb && g.ballY <= g.paddleYb+paddleHeight {
+			// log.Println("Trafiona B")
+			g.ballColor = white
+		} else {
+			g.Reset()
+		}
 		// uderza w prawa
-		log.Println("right")
+		// log.Println("right")
 	} else if g.ballX <= ballRadius {
 		g.ballDr = true
+		if g.ballY >= g.paddleYa && g.ballY <= g.paddleYa+paddleHeight {
+			// log.Println("Trafiona A")
+			g.ballColor = yellow
+		} else {
+			g.Reset()
+		}
 		// uderza w lewa
-		log.Println("left")
+		// log.Println("left")
 	}
 
 	if g.ballY >= screenHeight-ballRadius {
@@ -79,11 +108,11 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{10, 10, 10, 255})
 
-	vector.FillRect(screen, 0, g.paddleYa, paddleWidth, paddleHeight, color.White, true)
+	vector.FillRect(screen, 0, g.paddleYa, paddleWidth, paddleHeight, white, true)
 
-	vector.FillRect(screen, screenWidth-paddleWidth, g.paddleYb, paddleWidth, paddleHeight, color.RGBA{255, 255, 0, 255}, true)
+	vector.FillRect(screen, screenWidth-paddleWidth, g.paddleYb, paddleWidth, paddleHeight, yellow, true)
 
-	vector.FillCircle(screen, g.ballX, g.ballY, ballRadius, color.White, true)
+	vector.FillCircle(screen, g.ballX, g.ballY, ballRadius, g.ballColor, true)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
@@ -92,10 +121,11 @@ func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
 
 func main() {
 	game := &Game{
-		ballX:  100,
-		ballY:  100,
-		ballDr: true,
-		ballDb: true,
+		ballX:     100,
+		ballY:     100,
+		ballDr:    true,
+		ballDb:    true,
+		ballColor: yellow,
 	}
 
 	if err := ebiten.RunGame(game); err != nil {
