@@ -1,104 +1,158 @@
 package main
 
 import (
+	"fmt"
 	"image/color"
 	"log"
 	"time"
 
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	"pl.home/game2/conf"
 
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
-var (
-	white  = color.White
-	yellow = color.RGBA{255, 255, 0, 255}
-)
+func main() {
+	game := &Game{
+		ballX:       conf.StartX,
+		ballY:       conf.StartY,
+		ballDr:      true,
+		ballDb:      true,
+		ballColor:   conf.StartColor,
+		ballSpeed:   conf.BallSpeed,
+		paddleSpeed: conf.PaddleSpeed,
+		tickerReset: make(chan struct{}),
+	}
+	game.gameSpeedUp()
 
-const (
-	paddleSpeed = 5
-	ballSpeed   = 3
+	if err := ebiten.RunGame(game); err != nil {
+		log.Fatal(err)
+	}
+}
 
-	screenWidth  = 400
-	screenHeight = 300
-
-	paddleWidth  = 10
-	paddleHeight = 50
-
-	ballRadius = 5
-)
+type Score struct {
+	Left  int
+	Right int
+}
 
 type Game struct {
-	paddleYa float32
-	paddleYb float32
+	paddleRightY float32
+	paddleLeftY  float32
 
 	ballX, ballY float32
 	ballDr       bool
 	ballDb       bool
 
 	ballColor color.Color
+
+	ballSpeed   float32
+	paddleSpeed float32
+
+	score Score
+
+	tickerReset chan struct{}
 }
 
-func (g *Game) Reset() {
-	g.ballY = 100
-	g.ballX = 100
+func (g *Game) gameSpeedUp() {
+	tick := time.Second * 10
+	ticker := time.NewTicker(tick)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				g.ballSpeed++
+				g.paddleSpeed++
+				log.Println("speed up!")
+			case <-g.tickerReset:
+				ticker.Reset(tick)
+				// log.Println("speed up reset")
+			}
+		}
+	}()
+
+}
+
+func (g *Game) reset() {
+	g.ballY = conf.StartX
+	g.ballX = conf.StartY
+	g.ballColor = conf.StartColor
 	g.ballDr = true
+	g.ballSpeed = conf.BallSpeed
+	g.paddleSpeed = conf.PaddleSpeed
+	g.tickerReset <- struct{}{}
 	time.Sleep(time.Second)
 }
 
+func (g *Game) scoreResult() (resultMsg string, face *text.GoTextFace, opts *text.DrawOptions) {
+	opts = &text.DrawOptions{}
+	opts.GeoM.Translate(conf.ScreenWidth/2-float64(len(conf.ScoreTpl)*5), conf.ScreenHeight-conf.FontResultSize)
+	opts.ColorScale.ScaleWithColor(conf.WhiteColor)
+
+	resultMsg = fmt.Sprintf(conf.ScoreTpl, g.score.Left, g.score.Right)
+
+	face = &text.GoTextFace{
+		Source: conf.ScoreFont,
+		Size:   conf.FontResultSize,
+	}
+	return
+}
+
 func (g *Game) Update() error {
-	if ebiten.IsKeyPressed(ebiten.KeyArrowUp) && g.paddleYb > 0 {
-		g.paddleYb -= paddleSpeed
+	if ebiten.IsKeyPressed(ebiten.KeyArrowUp) && g.paddleLeftY > 0 {
+		g.paddleLeftY -= g.paddleSpeed
 		// log.Println("paddleYb", g.paddleYb)
 	}
-	if ebiten.IsKeyPressed(ebiten.KeyArrowDown) && g.paddleYb < screenHeight-paddleHeight {
-		g.paddleYb += paddleSpeed
+	if ebiten.IsKeyPressed(ebiten.KeyArrowDown) && g.paddleLeftY < conf.ScreenHeight-conf.PaddleHeight {
+		g.paddleLeftY += g.paddleSpeed
 		// log.Println("paddleYb", g.paddleYb)
 	}
 
-	if ebiten.IsKeyPressed(ebiten.KeyW) && g.paddleYa > 0 {
-		g.paddleYa -= paddleSpeed
+	if ebiten.IsKeyPressed(ebiten.KeyW) && g.paddleRightY > 0 {
+		g.paddleRightY -= g.paddleSpeed
 	}
-	if ebiten.IsKeyPressed(ebiten.KeyS) && g.paddleYa < screenHeight-paddleHeight {
-		g.paddleYa += paddleSpeed
+	if ebiten.IsKeyPressed(ebiten.KeyS) && g.paddleRightY < conf.ScreenHeight-conf.PaddleHeight {
+		g.paddleRightY += g.paddleSpeed
 	}
 
 	if g.ballDr {
-		g.ballX += ballSpeed
+		g.ballX += g.ballSpeed
 	} else {
-		g.ballX -= ballSpeed
+		g.ballX -= g.ballSpeed
 	}
 	if g.ballDb {
-		g.ballY += ballSpeed
+		g.ballY += g.ballSpeed
 	} else {
-		g.ballY -= ballSpeed
+		g.ballY -= g.ballSpeed
 	}
 
-	if g.ballX >= screenWidth-ballRadius {
+	if g.ballX >= conf.ScreenWidth-conf.BallRadius {
 		g.ballDr = false
-		if g.ballY >= g.paddleYb && g.ballY <= g.paddleYb+paddleHeight {
+		if g.ballY >= g.paddleLeftY && g.ballY <= g.paddleLeftY+conf.PaddleHeight {
 			// log.Println("Trafiona B")
-			g.ballColor = white
+			g.ballColor = conf.WhiteColor
 		} else {
-			g.Reset()
+			g.reset()
+			g.score.Left++
 		}
 		// uderza w prawa
 		// log.Println("right")
-	} else if g.ballX <= ballRadius {
+	} else if g.ballX <= conf.BallRadius {
 		g.ballDr = true
-		if g.ballY >= g.paddleYa && g.ballY <= g.paddleYa+paddleHeight {
+		if g.ballY >= g.paddleRightY && g.ballY <= g.paddleRightY+conf.PaddleHeight {
 			// log.Println("Trafiona A")
-			g.ballColor = yellow
+			g.ballColor = conf.YellowColor
 		} else {
-			g.Reset()
+			g.reset()
+			g.score.Right++
 		}
 		// uderza w lewa
 		// log.Println("left")
 	}
 
-	if g.ballY >= screenHeight-ballRadius {
+	if g.ballY >= conf.ScreenHeight-conf.BallRadius {
 		g.ballDb = false
-	} else if g.ballY <= ballRadius {
+	} else if g.ballY <= conf.BallRadius {
 		g.ballDb = true
 	}
 
@@ -108,27 +162,16 @@ func (g *Game) Update() error {
 func (g *Game) Draw(screen *ebiten.Image) {
 	screen.Fill(color.RGBA{10, 10, 10, 255})
 
-	vector.FillRect(screen, 0, g.paddleYa, paddleWidth, paddleHeight, white, true)
+	vector.FillRect(screen, 0, g.paddleRightY, conf.PaddleWidth, conf.PaddleHeight, conf.WhiteColor, true)
 
-	vector.FillRect(screen, screenWidth-paddleWidth, g.paddleYb, paddleWidth, paddleHeight, yellow, true)
+	vector.FillRect(screen, conf.ScreenWidth-conf.PaddleWidth, g.paddleLeftY, conf.PaddleWidth, conf.PaddleHeight, conf.YellowColor, true)
 
-	vector.FillCircle(screen, g.ballX, g.ballY, ballRadius, g.ballColor, true)
+	vector.FillCircle(screen, g.ballX, g.ballY, conf.BallRadius, g.ballColor, true)
+
+	resultMsg, face, opts := g.scoreResult()
+	text.Draw(screen, resultMsg, face, opts)
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
-	return screenWidth, screenHeight
-}
-
-func main() {
-	game := &Game{
-		ballX:     100,
-		ballY:     100,
-		ballDr:    true,
-		ballDb:    true,
-		ballColor: yellow,
-	}
-
-	if err := ebiten.RunGame(game); err != nil {
-		log.Fatal(err)
-	}
+	return conf.ScreenWidth, conf.ScreenHeight
 }
