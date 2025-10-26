@@ -8,3 +8,6 @@ build-static:
 
 build-opengl:
 	cd game2; go build -tags "ebitengine_opengl" -o $(BIN)game2-gl .
+
+run:
+	cd game2; go run main.go

@@ -3,7 +3,6 @@ package conf
 import (
 	"bytes"
 	_ "embed"
-	"image/color"
 	"log"
 
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
@@ -11,11 +10,6 @@ import (
 
 //go:embed fonts/PressStart2P-Regular.ttf
 var fontData []byte
-
-var (
-	WhiteColor  = color.White
-	YellowColor = color.RGBA{255, 255, 0, 255}
-)
 
 const (
 	PaddleSpeed = 5
