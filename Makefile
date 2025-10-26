@@ -11,3 +11,6 @@ build-opengl:
 
 run:
 	cd game2; go run main.go
+
+check-run:
+	cd check; go run main.go

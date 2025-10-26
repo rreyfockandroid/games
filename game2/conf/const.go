@@ -18,16 +18,28 @@ const (
 	ScreenWidth  = 400
 	ScreenHeight = 300
 
-	PaddleWidth  = 10
+	WindowWidth = 800
+	WindowHeigh = 600
+
+	PaddleWidth  = 5
 	PaddleHeight = 50
 
-	BallRadius     = 5
+	BallRadius     = 4
 	FontResultSize = 8
 
-	StartX = 100
-	StartY = 100
+	StartX = ScreenWidth / 2
+	StartY = ScreenHeight / 2
 
 	ScoreTpl = "Score: %d:%d"
+
+	start                    = float32(20)
+	LeftPaddleStartPosition  = start
+	RightPaddleStartPosition = ScreenHeight - PaddleHeight - start
+
+	WallWidth = 5
+	WallHeigh = 50
+	WallX     = ScreenWidth/2 - WallWidth
+	WallY     = ScreenHeight / 2
 )
 
 var (
@@ -36,7 +48,7 @@ var (
 )
 
 func newScoreFont() *text.GoTextFaceSource {
-	reader := bytes.NewReader(fontData) // ✅ io.Reader
+	reader := bytes.NewReader(fontData) // io.Reader
 	face, err := text.NewGoTextFaceSource(reader)
 	if err != nil {
 		log.Fatal(err)
