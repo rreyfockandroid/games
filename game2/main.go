@@ -8,6 +8,7 @@ import (
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/text/v2"
+	"pl.home/game2/board"
 	"pl.home/game2/conf"
 	el "pl.home/game2/element"
 
@@ -19,7 +20,7 @@ func main() {
 		ball:        el.NewBall(),
 		paddleLeft:  el.NewPaddle(conf.LeftPaddleStartPosition),
 		paddleRight: el.NewPaddle(conf.RightPaddleStartPosition),
-		wall:        el.NewWall(),
+		board:       board.NewBoard1(),
 
 		tickerReset: make(chan struct{}),
 	}
@@ -39,8 +40,7 @@ type Game struct {
 	paddleRight *el.Paddle
 
 	score el.Score
-
-	wall *el.Wall
+	board board.Board
 
 	tickerReset chan struct{}
 }
@@ -112,15 +112,7 @@ func (g *Game) Update() error {
 		g.ball.Y -= g.ball.Speed
 	}
 
-	// fmt.Println(g.ball.X, " ", g.ball.Y)
-
-	// if g.wall.UpdateDirect(g.ball.X, g.ball.Y) {
-	// 	if g.ball.DirectRight {
-	// 		g.ball.DirectRight = false
-	// 	} else {
-	// 		g.ball.DirectRight = true
-	// 	}
-	// }
+	g.board.Update(g.ball)
 
 	if g.ball.X >= conf.ScreenWidth-conf.BallRadius {
 		if g.ball.Y >= g.paddleRight.Y && g.ball.Y <= g.paddleRight.Y+conf.PaddleHeight {
@@ -164,7 +156,7 @@ func (g *Game) Draw(screen *ebiten.Image) {
 
 	vector.FillCircle(screen, g.ball.X, g.ball.Y, conf.BallRadius, g.ball.Color, true) // ball
 
-	// vector.FillRect(screen, g.wall.X, g.wall.Y, g.wall.Width, g.wall.Height, g.wall.Color, true) // wall
+	g.board.Draw(screen)
 
 	resultMsg, face, opts := g.scoreResult()
 	text.Draw(screen, resultMsg, face, opts)

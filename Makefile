@@ -14,3 +14,6 @@ run:
 
 check-run:
 	cd check; go run main.go
+
+run1:
+	cd game1; go run hello.go
