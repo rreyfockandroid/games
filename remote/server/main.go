@@ -5,13 +5,44 @@ import (
 	"fmt"
 	"io"
 	"net"
+	"strconv"
 
 	"pl.home/remote/encoder"
 	"pl.home/remote/message"
+	"pl.home/remote/rtnet"
+)
+
+const (
+	port = 8981
 )
 
 func main() {
-	ln, err := net.Listen("tcp", ":8981")
+
+	// text()
+	binary()
+}
+
+func binary() {
+	mess := make(chan []byte)
+	lst, err := rtnet.NewListener(port, mess)
+	if err != nil {
+		panic(err)
+	}
+	for {
+		msg := <-mess
+		encr := encoder.NewBinaryEncoder[message.BallMsg]()
+		ball, err := encr.Decode([]byte(msg))
+		if err != nil {
+			continue
+			// panic(err)
+		}
+		fmt.Printf("BALL: %+v\n", ball)
+	}
+	lst.Close()
+}
+
+func text() {
+	ln, err := net.Listen("tcp", ":"+strconv.Itoa(port))
 	if err != nil {
 		panic(err)
 	}
@@ -26,29 +57,6 @@ func main() {
 	defer conn.Close()
 
 	fmt.Println("polaczono z klientem")
-	text(ln, conn)
-	// binary(ln, conn)
-}
-
-func binary(ln net.Listener, conn net.Conn) {
-	for {
-		msg, err := bufio.NewReader(conn).ReadString('\n')
-		if err != nil {
-			if err == io.EOF {
-				// break
-			}
-		}
-		encr := encoder.NewBinaryEncoder[message.BallMsg]()
-		ball, err := encr.Decode([]byte(msg))
-		if err != nil {
-			// panic(err)
-		}
-		fmt.Printf("%+v\n", ball)
-		conn.Write([]byte("ok\n"))
-	}
-}
-
-func text(ln net.Listener, conn net.Conn) {
 	for {
 		msg, err := bufio.NewReader(conn).ReadString('\n')
 		fmt.Println("ERR: ", err)

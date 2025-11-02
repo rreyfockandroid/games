@@ -5,6 +5,11 @@ import (
 	"encoding/gob"
 )
 
+type Encoder[T any] interface {
+	Encode(s T) ([]byte, error)
+	Decode(data []byte) (*T, error)
+}
+
 type BinaryEncoder[T any] struct {
 }
 

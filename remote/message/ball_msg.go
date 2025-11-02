@@ -1,11 +1,16 @@
 package message
 
-import "image/color"
+import (
+	"image/color"
+	"time"
+)
 
 type BallMsg struct {
+	Id                        int
 	X, Y                      float32
 	DirectRight, DirectBottom bool
 	Speed                     float32
 	Color                     color.Color
 	Stop                      bool
+	Time                      time.Time
 }
