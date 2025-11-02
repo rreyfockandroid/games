@@ -11,16 +11,21 @@ import (
 	"pl.home/game2/board"
 	"pl.home/game2/conf"
 	el "pl.home/game2/element"
+	"pl.home/game2/stage"
 
 	"github.com/hajimehoshi/ebiten/v2/vector"
 )
 
 func main() {
+	paddleLeft := el.NewPaddle(conf.LeftPaddleStartPosition)
+	paddleRight := el.NewPaddle(conf.RightPaddleStartPosition)
+	ball := el.NewBall()
 	game := &Game{
-		ball:        el.NewBall(),
-		paddleLeft:  el.NewPaddle(conf.LeftPaddleStartPosition),
-		paddleRight: el.NewPaddle(conf.RightPaddleStartPosition),
+		ball:        ball,
+		paddleLeft:  paddleLeft,
+		paddleRight: paddleRight,
 		board:       board.NewBoard1(),
+		motion:      stage.NewMotionController(paddleLeft, paddleRight, ball),
 
 		tickerReset: make(chan struct{}),
 	}
@@ -41,6 +46,8 @@ type Game struct {
 
 	score el.Score
 	board board.Board
+
+	motion *stage.MotionController
 
 	tickerReset chan struct{}
 }
@@ -70,7 +77,7 @@ func (g *Game) reset() {
 	g.paddleRight.Reset()
 	g.paddleLeft.Reset()
 	g.tickerReset <- struct{}{}
-	time.Sleep(time.Second)
+	// time.Sleep(time.Second)
 }
 
 func (g *Game) scoreResult() (resultMsg string, face *text.GoTextFace, opts *text.DrawOptions) {
@@ -88,30 +95,8 @@ func (g *Game) scoreResult() (resultMsg string, face *text.GoTextFace, opts *tex
 }
 
 func (g *Game) Update() error {
-	if ebiten.IsKeyPressed(ebiten.KeyArrowUp) && g.paddleRight.Y > 0 {
-		g.paddleRight.Y -= g.paddleRight.Speed
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyArrowDown) && g.paddleRight.Y < conf.ScreenHeight-conf.PaddleHeight {
-		g.paddleRight.Y += g.paddleRight.Speed
-	}
 
-	if ebiten.IsKeyPressed(ebiten.KeyW) && g.paddleLeft.Y > 0 {
-		g.paddleLeft.Y -= g.paddleLeft.Speed
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyS) && g.paddleLeft.Y < conf.ScreenHeight-conf.PaddleHeight {
-		g.paddleLeft.Y += g.paddleLeft.Speed
-	}
-	if g.ball.DirectRight {
-		g.ball.X += g.ball.Speed
-	} else {
-		g.ball.X -= g.ball.Speed
-	}
-	if g.ball.DirectBottom {
-		g.ball.Y += g.ball.Speed
-	} else {
-		g.ball.Y -= g.ball.Speed
-	}
-
+	g.motion.Update(ebiten.IsKeyPressed(ebiten.KeyArrowUp), ebiten.IsKeyPressed(ebiten.KeyArrowDown), ebiten.IsKeyPressed(ebiten.KeyW), ebiten.IsKeyPressed(ebiten.KeyS))
 	g.board.Update(g.ball)
 
 	if g.ball.X >= conf.ScreenWidth-conf.BallRadius {

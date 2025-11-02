@@ -12,6 +12,14 @@ import (
 var fontData []byte
 
 const (
+	Player       = "left"
+	PortListener = 8129
+	PortSender   = 8128
+
+	// Player       = "right"
+	// PortListener = 8128
+	// PortSender   = 8129
+
 	PaddleSpeed = 5
 	BallSpeed   = 3
 
