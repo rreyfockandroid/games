@@ -7,13 +7,14 @@ type Paddle struct {
 	Speed float32
 }
 
-func NewPaddle(y float32) *Paddle {
+func NewPaddle() *Paddle {
 	return &Paddle{
 		Speed: conf.PaddleSpeed,
-		Y:     y,
+		Y:     conf.PaddleStartPosition,
 	}
 }
 
 func (p *Paddle) Reset() {
 	p.Speed = conf.PaddleSpeed
+	p.Y = conf.PaddleStartPosition
 }

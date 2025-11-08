@@ -1,6 +1,7 @@
 package stage
 
 import (
+	"log"
 	"time"
 
 	"pl.home/game2/conf"
@@ -14,6 +15,11 @@ type MotionController struct {
 	paddleLeft  *el.Paddle
 	paddleRight *el.Paddle
 	ball        *el.Ball
+
+	tickerReset chan struct{}
+	tickerStop  chan struct{}
+
+	start time.Time
 }
 
 func NewMotionController(paddleLeft *el.Paddle, paddleRight *el.Paddle, ball *el.Ball) *MotionController {
@@ -21,11 +27,51 @@ func NewMotionController(paddleLeft *el.Paddle, paddleRight *el.Paddle, ball *el
 		paddleLeft:  paddleLeft,
 		paddleRight: paddleRight,
 		ball:        ball,
+
+		tickerReset: make(chan struct{}),
+		tickerStop:  make(chan struct{}),
 	}
 	// go motion.list()
 	// go motion.send()
 
 	return motion
+}
+
+func (mc *MotionController) Start() {
+	mc.gameSpeedUp()
+	mc.start = time.Now()
+}
+
+func (mc *MotionController) Stop() {
+	mc.tickerStop <- struct{}{}
+}
+
+func (mc *MotionController) gameSpeedUp() {
+	tick := time.Second * 10
+	ticker := time.NewTicker(tick)
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				mc.ball.Speed++
+				mc.paddleLeft.Speed++
+				mc.paddleRight.Speed++
+				log.Println("speed up!")
+			case <-mc.tickerReset:
+				ticker.Reset(tick)
+			// log.Println("speed up reset")
+			case <-mc.tickerStop:
+				ticker.Stop()
+				return
+			}
+		}
+	}()
+
+}
+
+func (mc *MotionController) Reset() {
+	mc.tickerReset <- struct{}{}
+	mc.start = time.Now()
 }
 
 func (mc *MotionController) Update(keyUp, keyDown, keyW, keyS bool) {
@@ -42,16 +88,17 @@ func (mc *MotionController) Update(keyUp, keyDown, keyW, keyS bool) {
 	if keyS && mc.paddleLeft.Y < conf.ScreenHeight-conf.PaddleHeight {
 		mc.paddleLeft.Y += mc.paddleLeft.Speed
 	}
-
-	if mc.ball.DirectRight {
-		mc.ball.X += mc.ball.Speed
-	} else {
-		mc.ball.X -= mc.ball.Speed
-	}
-	if mc.ball.DirectBottom {
-		mc.ball.Y += mc.ball.Speed
-	} else {
-		mc.ball.Y -= mc.ball.Speed
+	if mc.start.UnixMilli() < time.Now().Add(-time.Millisecond*300).UnixMilli() {
+		if mc.ball.DirectRight {
+			mc.ball.X += mc.ball.Speed
+		} else {
+			mc.ball.X -= mc.ball.Speed
+		}
+		if mc.ball.DirectBottom {
+			mc.ball.Y += mc.ball.Speed
+		} else {
+			mc.ball.Y -= mc.ball.Speed
+		}
 	}
 }
 

@@ -40,9 +40,7 @@ const (
 
 	ScoreTpl = "Score: %d:%d"
 
-	start                    = float32(20)
-	LeftPaddleStartPosition  = start
-	RightPaddleStartPosition = ScreenHeight - PaddleHeight - start
+	PaddleStartPosition = (ScreenHeight - PaddleHeight) / 2
 
 	WallWidth = 5
 	WallHeigh = 50

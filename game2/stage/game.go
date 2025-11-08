@@ -1,11 +1,10 @@
-package board
+package stage
 
 import (
 	"errors"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"github.com/hajimehoshi/ebiten/v2/text/v2"
 	"pl.home/game2/conf"
 )
 
@@ -23,24 +22,30 @@ type Game struct {
 	state     GameState
 	menuIndex int
 	mainMenu  []string
+
+	scene *Scene
 }
 
 func NewGame() *Game {
 	return &Game{
 		state:     GameStateMenu,
 		menuIndex: 0,
-		mainMenu:  []string{"Start Game", "Options", "Exit"},
+		mainMenu:  []string{"Start Game", "Options", "Remote", "Exit"},
+		scene:     NewScene(),
 	}
 }
 
-func (g *Game) IsPlaying() bool {
-	return g.state == GameStatePlaying
+func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
+	return conf.ScreenWidth, conf.ScreenHeight
 }
 
 func (g *Game) Update() error {
 	g.updatePauseEsc()
 	switch g.state {
 	case GameStatePlaying:
+		if err := g.scene.Update(); err != nil {
+			return err
+		}
 	case GameStatePause:
 
 	case GameStateMenu:
@@ -53,10 +58,28 @@ func (g *Game) Update() error {
 
 func (g *Game) Draw(screen *ebiten.Image) {
 	switch g.state {
+	case GameStatePlaying:
+		g.scene.Draw(screen)
 	case GameStateMenu:
 		g.drawMenu(screen)
 	case GameStatePause:
 		g.drawPause(screen)
+	case GameStateOptions:
+		g.drawOptions(screen)
+	}
+}
+
+func (g *Game) drawOptions(screen *ebiten.Image) {
+	g.state = GameStateOptions
+}
+
+func (g *Game) drawPause(screen *ebiten.Image) {
+	DrawPause(screen)
+}
+
+func (g *Game) drawMenu(screen *ebiten.Image) {
+	for i := 0; i < len(g.mainMenu); i++ {
+		DrawMainMenu(screen, i == g.menuIndex, g.mainMenu[i], i)
 	}
 }
 
@@ -69,40 +92,11 @@ func (g *Game) updatePauseEsc() {
 		}
 	}
 	if inpututil.IsKeyJustPressed(ebiten.KeyEscape) {
+		if g.state == GameStatePlaying {
+			g.scene.Stop()
+		}
 		g.state = GameStateMenu
 	}
-}
-
-func (g *Game) drawPause(screen *ebiten.Image) {
-	face := &text.GoTextFace{
-		Source: conf.ScoreFont,
-		Size:   conf.FontResultSize,
-	}
-	opts := &text.DrawOptions{}
-	opts.ColorScale.ScaleWithColor(conf.WhiteColor)
-	opts.GeoM.Translate(conf.ScreenWidth/2-50, conf.ScreenHeight/2-10)
-
-	text.Draw(screen, "PAUSE", face, opts)
-}
-
-func (g *Game) drawMenu(screen *ebiten.Image) {
-	face := &text.GoTextFace{
-		Source: conf.ScoreFont,
-		Size:   conf.FontResultSize,
-	}
-	for i := 0; i < len(g.mainMenu); i++ {
-		opts := &text.DrawOptions{}
-		opts.ColorScale.ScaleWithColor(conf.WhiteColor)
-		opts.GeoM.Translate(conf.ScreenWidth/2-50, conf.ScreenHeight/2+float64(2*i*conf.FontResultSize)-50)
-
-		msg := g.mainMenu[i]
-		if i == g.menuIndex {
-			opts.ColorScale.ScaleWithColor(conf.YellowColor)
-		}
-
-		text.Draw(screen, msg, face, opts)
-	}
-
 }
 
 func (g *Game) updateMenu() {
@@ -120,9 +114,12 @@ func (g *Game) updateMenu() {
 		switch g.menuIndex {
 		case 0:
 			g.state = GameStatePlaying
+			g.scene.Start()
 		case 1:
 			g.state = GameStateOptions
 		case 2:
+
+		case 3:
 			g.state = GameStateExit
 		}
 	}
