@@ -20,7 +20,8 @@ func main() {
 	paddleLeft := el.NewPaddle(conf.LeftPaddleStartPosition)
 	paddleRight := el.NewPaddle(conf.RightPaddleStartPosition)
 	ball := el.NewBall()
-	game := &Game{
+	scene := &Scene{
+		game:        board.NewGame(),
 		ball:        ball,
 		paddleLeft:  paddleLeft,
 		paddleRight: paddleRight,
@@ -29,16 +30,17 @@ func main() {
 
 		tickerReset: make(chan struct{}),
 	}
-	game.gameSpeedUp()
+	scene.gameSpeedUp()
 
 	ebiten.SetWindowSize(conf.WindowWidth, conf.WindowHeigh)
 
-	if err := ebiten.RunGame(game); err != nil {
+	if err := ebiten.RunGame(scene); err != nil {
 		log.Fatal(err)
 	}
 }
 
-type Game struct {
+type Scene struct {
+	game *board.Game
 	ball *el.Ball
 
 	paddleLeft  *el.Paddle
@@ -52,7 +54,7 @@ type Game struct {
 	tickerReset chan struct{}
 }
 
-func (g *Game) gameSpeedUp() {
+func (g *Scene) gameSpeedUp() {
 	tick := time.Second * 10
 	ticker := time.NewTicker(tick)
 	go func() {
@@ -72,7 +74,7 @@ func (g *Game) gameSpeedUp() {
 
 }
 
-func (g *Game) reset() {
+func (g *Scene) reset() {
 	g.ball.Reset()
 	g.paddleRight.Reset()
 	g.paddleLeft.Reset()
@@ -80,7 +82,7 @@ func (g *Game) reset() {
 	// time.Sleep(time.Second)
 }
 
-func (g *Game) scoreResult() (resultMsg string, face *text.GoTextFace, opts *text.DrawOptions) {
+func (g *Scene) scoreResult() (resultMsg string, face *text.GoTextFace, opts *text.DrawOptions) {
 	opts = &text.DrawOptions{}
 	opts.GeoM.Translate(conf.ScreenWidth/2-float64(len(conf.ScoreTpl)*5), conf.ScreenHeight-conf.FontResultSize)
 	opts.ColorScale.ScaleWithColor(conf.WhiteColor)
@@ -94,7 +96,14 @@ func (g *Game) scoreResult() (resultMsg string, face *text.GoTextFace, opts *tex
 	return
 }
 
-func (g *Game) Update() error {
+func (g *Scene) Update() error {
+
+	if err := g.game.Update(); err != nil {
+		return err
+	}
+	if !g.game.IsPlaying() {
+		return nil
+	}
 
 	g.motion.Update(ebiten.IsKeyPressed(ebiten.KeyArrowUp), ebiten.IsKeyPressed(ebiten.KeyArrowDown), ebiten.IsKeyPressed(ebiten.KeyW), ebiten.IsKeyPressed(ebiten.KeyS))
 	g.board.Update(g.ball)
@@ -132,8 +141,16 @@ func (g *Game) Update() error {
 	return nil
 }
 
-func (g *Game) Draw(screen *ebiten.Image) {
+func (g *Scene) Draw(screen *ebiten.Image) {
+
 	screen.Fill(color.RGBA{10, 10, 10, 255})
+
+	/////
+	g.game.Draw(screen)
+	////
+	if !g.game.IsPlaying() {
+		return
+	}
 
 	vector.FillRect(screen, 0, g.paddleLeft.Y, conf.PaddleWidth, conf.PaddleHeight, conf.WhiteColor, true) // left paddle
 
@@ -147,6 +164,6 @@ func (g *Game) Draw(screen *ebiten.Image) {
 	text.Draw(screen, resultMsg, face, opts)
 }
 
-func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
+func (g *Scene) Layout(outsideWidth, outsideHeight int) (int, int) {
 	return conf.ScreenWidth, conf.ScreenHeight
 }
