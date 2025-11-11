@@ -3,7 +3,6 @@ package utils
 import (
 	"fmt"
 	"image/color"
-	"sync"
 
 	"github.com/ebitengine/debugui"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -17,14 +16,13 @@ type Cursor struct {
 	y            int
 	mouseX       int
 	mouseY       int
-	initOnce     sync.Once
+
+	collapsed bool
 }
 
 func NewCursor() *Cursor {
 	c := &Cursor{}
-	c.x = 100
-	c.y = 100
-	c.pointerImage = ebiten.NewImage(8, 8)
+	c.pointerImage = ebiten.NewImage(4, 4)
 	c.pointerImage.Fill(color.RGBA{0xff, 0, 0, 0xff})
 	return c
 }
@@ -48,26 +46,34 @@ func (c *Cursor) pointer() {
 		c.y += deltaY
 	}
 
+	maxW := cfg.WindowWidth
+	maxH := cfg.WindowHeigh
+	if ebiten.IsFullscreen() {
+		maxW, maxH = ebiten.Monitor().Size()
+	}
+
 	// Constrain red dot within screen view.
 	if c.x < 0 {
 		c.x = 0
-	} else if c.x > cfg.WindowWidth-c.pointerImage.Bounds().Dx() {
-		c.x = cfg.WindowWidth - c.pointerImage.Bounds().Dx()
+	} else if c.x > maxW-c.pointerImage.Bounds().Dx() {
+		c.x = maxW - c.pointerImage.Bounds().Dx()
 	}
 
 	if c.y < 0 {
 		c.y = 0
-	} else if c.y > cfg.WindowHeigh-c.pointerImage.Bounds().Dy() {
-		c.y = cfg.WindowHeigh - c.pointerImage.Bounds().Dy()
+	} else if c.y > maxH-c.pointerImage.Bounds().Dy() {
+		c.y = maxH - c.pointerImage.Bounds().Dy()
 	}
 }
 
 func (c *Cursor) Update() error {
 	if ebiten.IsKeyPressed(ebiten.KeyControl) && inpututil.IsKeyJustPressed(ebiten.KeyM) {
 		if !c.isOn() {
+			c.collapsed = true
 			ebiten.SetCursorMode(ebiten.CursorModeCaptured)
 			c.mouseX, c.mouseY = ebiten.CursorPosition()
 		} else {
+			c.collapsed = false
 			ebiten.SetCursorMode(ebiten.CursorModeVisible)
 		}
 	}
@@ -80,13 +86,15 @@ func (c *Cursor) Update() error {
 
 func (c *Cursor) Append(ctx *debugui.Context) {
 	on := c.isOn()
-	ctx.Header("Cursor info", true, func() {
+	ctx.Header("Cursor info", c.collapsed, func() {
 		ctx.Checkbox(&on, "Cursor position [ctrl+m]").On(func() {
 			if on {
 				ebiten.SetCursorMode(ebiten.CursorModeCaptured)
 			}
-			fmt.Println("pressed")
 		})
+		msg := fmt.Sprintf("x: %d\ny: %d", c.x, c.y)
+		ctx.Text(msg)
+
 	})
 }
 
