@@ -1,0 +1,29 @@
+game4/
+├── cmd/
+│   └── mygame4/
+│       └── main.go          # punkt wejścia programu
+│
+├── internal/                # logika wewnętrzna gry (nieeksportowana)
+│   ├── game/                # główna pętla gry, zarządzanie stanem
+│   │   ├── game.go
+│   │   ├── state.go
+│   │   ├── input.go
+│   │   └── update.go
+│   ├── physics/             # silnik fizyki
+│   ├── render/              # renderowanie (np. ebiten, SDL2, OpenGL)
+│   ├── audio/               # dźwięk
+│   ├── assets/              # wczytywanie zasobów
+│   └── utils/               # pomocnicze funkcje
+│
+├── assets/                  # dane niekodowe
+│   ├── images/
+│   ├── sounds/
+│   ├── music/
+│   └── levels/
+│
+├── pkg/                     # opcjonalnie: moduły, które można ponownie użyć
+│   ├── vector/
+│   └── math/
+│
+├── go.mod
+└── README.md
