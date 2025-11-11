@@ -8,20 +8,30 @@ import (
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
+type DebugComponent interface {
+	Update() error
+	Draw(screen *ebiten.Image)
+	Append(ctx *debugui.Context)
+}
+
 type DebugWindow struct {
-	monitor *Monitor
-	cursor  Cursor
-	screen  Screen
+	debugComponents []DebugComponent
+
 	debugui debugui.DebugUI
 
 	visible bool
 }
 
 func NewDebugWindow(windowWidth, windowHeigh int, visible bool) *DebugWindow {
+	debugComponents := []DebugComponent{
+		NewScreen(),
+		NewCursor(windowWidth, windowHeigh),
+		NewMonitor(),
+	}
+
 	debug := &DebugWindow{
-		monitor: NewMonitor(),
-		visible: visible,
-		cursor:  *NewCursor(windowWidth, windowHeigh),
+		debugComponents: debugComponents,
+		visible:         visible,
 	}
 	return debug
 }
@@ -33,17 +43,16 @@ func (d *DebugWindow) Update() error {
 	if !d.show() {
 		return nil
 	}
-	if err := d.cursor.Update(); err != nil {
-		return err
-	}
-	if err := d.screen.Update(); err != nil {
-		return err
+	for _, c := range d.debugComponents {
+		if err := c.Update(); err != nil {
+			return nil
+		}
 	}
 	if _, err := d.debugui.Update(func(ctx *debugui.Context) error {
 		ctx.Window("Debug [ctrl+d]", image.Rect(10, 10, 200, 200), func(layout debugui.ContainerLayout) {
-			d.screen.Append(ctx)
-			d.cursor.Append(ctx)
-			d.monitor.Append(ctx)
+			for _, c := range d.debugComponents {
+				c.Append(ctx)
+			}
 		})
 		return nil
 	}); err != nil {
@@ -58,7 +67,9 @@ func (d *DebugWindow) Draw(screen *ebiten.Image) {
 		return
 	}
 	d.debugui.Draw(screen)
-	d.cursor.Draw(screen)
+	for _, c := range d.debugComponents {
+		c.Draw(screen)
+	}
 }
 
 func (d *DebugWindow) Layout(outsideWidth, outsideHeight int) (int, int) {

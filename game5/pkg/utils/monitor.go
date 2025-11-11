@@ -71,3 +71,9 @@ func (m *Monitor) Append(ctx *debugui.Context) {
 		})
 	})
 }
+
+func (m *Monitor) Update() error {
+	return nil
+}
+
+func (m *Monitor) Draw(screen *ebiten.Image) {}
