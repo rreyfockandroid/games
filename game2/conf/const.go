@@ -23,11 +23,11 @@ const (
 	PaddleSpeed = 5
 	BallSpeed   = 3
 
-	ScreenWidth  = 400
-	ScreenHeight = 300
+	WindowWidth = 600
+	WindowHeigh = 400
 
-	WindowWidth = 800
-	WindowHeigh = 600
+	ScreenWidth  = WindowWidth
+	ScreenHeight = WindowHeigh
 
 	PaddleWidth  = 5
 	PaddleHeight = 50

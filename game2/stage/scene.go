@@ -2,7 +2,6 @@ package stage
 
 import (
 	"fmt"
-	"image/color"
 
 	"github.com/hajimehoshi/ebiten/v2"
 	"pl.home/game2/board"
@@ -105,8 +104,6 @@ func (g *Scene) Draw(screen *ebiten.Image) {
 	if !g.started {
 		return
 	}
-
-	screen.Fill(color.RGBA{10, 10, 10, 255})
 
 	DrawLeftPadle(screen, g.paddleLeft.Y)
 	DrawRightPadle(screen, g.paddleRight.Y)

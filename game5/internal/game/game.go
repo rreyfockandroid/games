@@ -2,7 +2,8 @@ package game
 
 import (
 	"github.com/hajimehoshi/ebiten/v2"
-	"pl.home/game5/internal/utils"
+	"pl.home/game5/internal/cfg"
+	"pl.home/game5/pkg/utils"
 )
 
 type Game struct {
@@ -11,7 +12,7 @@ type Game struct {
 
 func NewGame() *Game {
 	return &Game{
-		debugWindow: utils.NewDebugWindow(),
+		debugWindow: utils.NewDebugWindow(cfg.WindowWidth, cfg.WindowHeigh, true),
 	}
 }
 

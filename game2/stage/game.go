@@ -6,6 +6,7 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
 	"pl.home/game2/conf"
+	"pl.home/game5/pkg/utils"
 )
 
 type GameState int
@@ -24,22 +25,28 @@ type Game struct {
 	mainMenu  []string
 
 	scene *Scene
+
+	debugWindow *utils.DebugWindow
 }
 
 func NewGame() *Game {
 	return &Game{
-		state:     GameStateMenu,
-		menuIndex: 0,
-		mainMenu:  []string{"Start Game", "Options", "Remote", "Exit"},
-		scene:     NewScene(),
+		debugWindow: utils.NewDebugWindow(conf.ScreenWidth, conf.ScreenHeight, false),
+		state:       GameStateMenu,
+		menuIndex:   0,
+		mainMenu:    []string{"Start Game", "Options", "Remote", "Exit"},
+		scene:       NewScene(),
 	}
 }
 
 func (g *Game) Layout(outsideWidth, outsideHeight int) (int, int) {
-	return conf.ScreenWidth, conf.ScreenHeight
+	return outsideWidth, outsideHeight
 }
 
 func (g *Game) Update() error {
+	if err := g.debugWindow.Update(); err != nil {
+		return err
+	}
 	g.updatePauseEsc()
 	switch g.state {
 	case GameStatePlaying:
@@ -57,6 +64,7 @@ func (g *Game) Update() error {
 }
 
 func (g *Game) Draw(screen *ebiten.Image) {
+	g.debugWindow.Draw(screen)
 	switch g.state {
 	case GameStatePlaying:
 		g.scene.Draw(screen)

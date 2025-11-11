@@ -17,11 +17,11 @@ type DebugWindow struct {
 	visible bool
 }
 
-func NewDebugWindow() *DebugWindow {
+func NewDebugWindow(windowWidth, windowHeigh int, visible bool) *DebugWindow {
 	debug := &DebugWindow{
 		monitor: NewMonitor(),
-		visible: true,
-		cursor:  *NewCursor(),
+		visible: visible,
+		cursor:  *NewCursor(windowWidth, windowHeigh),
 	}
 	return debug
 }
@@ -33,8 +33,12 @@ func (d *DebugWindow) Update() error {
 	if !d.show() {
 		return nil
 	}
-	d.cursor.Update()
-	d.screen.Update()
+	if err := d.cursor.Update(); err != nil {
+		return err
+	}
+	if err := d.screen.Update(); err != nil {
+		return err
+	}
 	if _, err := d.debugui.Update(func(ctx *debugui.Context) error {
 		ctx.Window("Debug [ctrl+d]", image.Rect(10, 10, 200, 200), func(layout debugui.ContainerLayout) {
 			d.screen.Append(ctx)

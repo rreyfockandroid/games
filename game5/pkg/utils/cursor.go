@@ -7,21 +7,23 @@ import (
 	"github.com/ebitengine/debugui"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
-	"pl.home/game5/internal/cfg"
 )
 
 type Cursor struct {
-	pointerImage *ebiten.Image
-	x            int
-	y            int
-	mouseX       int
-	mouseY       int
+	windowWidth, windowHeigh int
+
+	pointerImage   *ebiten.Image
+	x, y           int
+	mouseX, mouseY int
 
 	collapsed bool
 }
 
-func NewCursor() *Cursor {
-	c := &Cursor{}
+func NewCursor(windowWidth, windowHeigh int) *Cursor {
+	c := &Cursor{
+		windowWidth: windowWidth,
+		windowHeigh: windowHeigh,
+	}
 	c.pointerImage = ebiten.NewImage(4, 4)
 	c.pointerImage.Fill(color.RGBA{0xff, 0, 0, 0xff})
 	return c
@@ -46,8 +48,8 @@ func (c *Cursor) pointer() {
 		c.y += deltaY
 	}
 
-	maxW := cfg.WindowWidth
-	maxH := cfg.WindowHeigh
+	maxW := c.windowWidth
+	maxH := c.windowHeigh
 	if ebiten.IsFullscreen() {
 		maxW, maxH = ebiten.Monitor().Size()
 	}
